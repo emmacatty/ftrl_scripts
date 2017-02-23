@@ -36,9 +36,9 @@ def model_filter(infile, outfile):
                 lite_model.write(line)            
     lite_model.close()                                        
 
-def predict_auc(filename, flag):
+def predict_auc(filename, flag, curTS):
     cmd = "cat ../data/" + filename + "/* | gzip -d |"
-    ds = time.strftime("%Y%m%d", time.localtime(time.time() - 2*SECOND_PER_DAY))
+    ds = time.strftime("%Y%m%d", time.localtime(curTS - 2*SECOND_PER_DAY))
     #model filter 0s
     model_filter("model."+flag+".2", "model."+flag+"."+ds)
     cmd += " ./ftrl_predict model." + flag + "." + ds + " 10 res." + flag +"."+ds
@@ -49,13 +49,9 @@ def predict_auc(filename, flag):
             return exec_cmd(cmd)
     return False
     
-def train_or_predict(round, filename, flag, daySpan):
+def train_or_predict(round, filename, flag, daySpan, curTS):
     if round == 1:
-        # ds = time.strftime("%Y%m%d", time.localtime(time.time() - 2*SECOND_PER_DAY))
-        # #model filter 0s
-        # model_filter("model."+flag+".2", "model."+flag+"."+ds)
-        # cmd += " ./ftrl_predict model." + flag + "." + ds + " 10 res." + flag +"."+ds
-        predict_auc(filename, flag)
+        predict_auc(filename, flag, curTS)
     else:
         cmd = "cat ../data/" + filename + "/* | gzip -d | ./ftrl_train"
         if round < daySpan + 1:
@@ -67,9 +63,9 @@ def train_or_predict(round, filename, flag, daySpan):
             return exec_cmd(cmd)
         return False
     
-def train_core(daySpan, dataPath, flag):
+def train_core(daySpan, dataPath, flag, curTS):
     for i in range(daySpan + 1, 0, -1):
-        ds = time.strftime("%Y%m%d", time.localtime(time.time() - i * SECOND_PER_DAY))
+        ds = time.strftime("%Y%m%d", time.localtime(curTS - i * SECOND_PER_DAY))
         fileName = "date=%s_CPC_" % ds + flag
         if not download_data(dataPath, fileName):
             break
@@ -85,6 +81,7 @@ def err_callback(arg):
         
         
 def train(daySpan, dataPath):
+    curTS = time.time()
     # step1: offline fea extract
     # pool = Pool(min(24, daySpan + 1))
     # for i in range(1, daySpan + 2):
@@ -110,9 +107,9 @@ def train(daySpan, dataPath):
     #     p.join()
 
     # step2: download data & train & predict
-    p_base = Process(target=train_core, args=(daySpan, dataPath, "base_feature", ))
+    p_base = Process(target=train_core, args=(daySpan, dataPath, "base_feature", curTS, ))
     p_base.start()
-    p_opt = Process(target=train_core, args=(daySpan, dataPath, "phone_video", ))
+    p_opt = Process(target=train_core, args=(daySpan, dataPath, "phone_video", curTS, ))
     p_opt.start()
     p_base.join()
     p_opt.join()
@@ -121,5 +118,5 @@ def train(daySpan, dataPath):
 
             
 if __name__ == '__main__':
-    dataPath = '/user/h_miui_ad/wwxu/test/phone_context/'
-    train(2, dataPath)
+    dataPath = '/user/h_miui_ad/wwxu/exp_new/phone_context/'
+    train(10, dataPath)
