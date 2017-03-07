@@ -7,8 +7,8 @@
 #set
 #queue="miui_recommendation"
 #queue="root.default"
-queue="root.service.miui_group.miui_ad"
-#queue="root.production.miui_group.miui_ad.queue_1"
+#queue="root.service.miui_group.miui_ad"
+queue="root.production.miui_group.miui_ad.queue_1"
 num_executor="200"
 master="yarn-cluster"
 #master="local[*]"
@@ -58,7 +58,9 @@ do
 done
 
 #output path
-outputfiles=/user/h_miui_ad/wwxu/test/phone_context/date=${date}
+outputfiles=/user/h_miui_ad/wwxu/exp_base/phone_context/date=${date}
+
+sampleRate=1
 
 hadoop --cluster c3prc-hadoop fs -rmr ${outputfiles}*
 
@@ -80,7 +82,7 @@ spark-submit \
     --conf spark.dynamicAllocation.maxExecutors=400 \
     --conf spark.yarn.driver.memoryOverhead=896 \
     --conf spark.memory.fraction=0.3 \
-    $JAR_PATH $adInfoPath $userInfoPath $historicalInfoPath $adEventPath $adLogV2Path $outputfiles
+    $JAR_PATH $adInfoPath $userInfoPath $historicalInfoPath $adEventPath $adLogV2Path $outputfiles $sampleRate
 
 if [ $? == 0 ]
 then

@@ -43,7 +43,7 @@ def predict_auc(filename, flag, curTS):
     model_filter("model."+flag+".2", "model."+flag+"."+ds)
     cmd += " ./ftrl_predict model." + flag + "." + ds + " 20 res." + flag +"."+ds
     if exec_cmd(cmd):
-        cmd = "rm -rf ../data" + filename
+        cmd = "rm -rf ../data/" + filename
         if exec_cmd(cmd):
             cmd = "cat res." + flag + "." + ds + " | ./AUC.py &> auc." + flag + "." + ds
             return exec_cmd(cmd)
@@ -56,7 +56,7 @@ def train_or_predict(round, filename, flag, daySpan, curTS):
         cmd = "cat ../data/" + filename + "/* | gzip -d | ./ftrl_train"
         if round < daySpan + 1:
             cmd += " -im model." + flag + "." + str(round+1)
-        cmd += " -m model." + flag + "." + str(round) + " -l1 5 -core 20 -bias 1"
+        cmd += " -m model." + flag + "." + str(round) + " -l1 1 -core 20 -bias 1"
         if exec_cmd(cmd):
             #drop data
             cmd = "rm -rf ../data/" + filename
@@ -87,16 +87,16 @@ def train(daySpan, dataPath, today=None):
         curTS = time.time()
         shiftDays = 0
     # step1: offline fea extract
-    # pool = Pool(min(24, daySpan + 1))
-    # for i in range(1+shiftDays, daySpan+ shiftDays + 2):
-    #     pool.apply_async(func=offline_fea, args=(i, ), callback=err_callback)
-    #     time.sleep(30)
-    # pool.close()
-    # pool.join()
-    # pool.terminate()
-    # if sum(status) != 0:
-    #     print "offline fea extract faild: %s" % sum(status)
-    #     return
+    pool = Pool(min(24, daySpan + 1))
+    for i in range(1+shiftDays, daySpan+ shiftDays + 2):
+        pool.apply_async(func=offline_fea, args=(i, ), callback=err_callback)
+        time.sleep(30)
+    pool.close()
+    pool.join()
+    pool.terminate()
+    if sum(status) != 0:
+        print "offline fea extract faild: %s" % sum(status)
+        return
     
 #    for i in range(1, daySpan + 2):
 #        offline_fea(i)
@@ -114,13 +114,14 @@ def train(daySpan, dataPath, today=None):
     # step2: download data & train & predict
 #    p_base = Process(target=train_core, args=(daySpan, dataPath, "base_feature", curTS, ))
 #    p_base.start()
-    p_opt = Process(target=train_core, args=(daySpan, dataPath, "phone_video", curTS, ))
-    p_opt.start()
+#    p_opt = Process(target=train_core, args=(daySpan, dataPath, "phone_video", curTS, ))
+#    p_opt.start()
 #    p_base.join()
-    p_opt.join()
+#    p_opt.join()
 
+#train_core(daySpan, dataPath, "phone_video", curTS)
 
             
 if __name__ == '__main__':
-    dataPath = '/user/h_miui_ad/wwxu/exp_vname/phone_context/'
-    train(10, dataPath, "20170223")
+    dataPath = '/user/h_miui_ad/wwxu/exp_base/phone_context/'
+    train(10, dataPath, "20170307")
